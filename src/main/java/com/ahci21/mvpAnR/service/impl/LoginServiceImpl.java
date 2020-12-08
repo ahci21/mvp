@@ -2,7 +2,10 @@ package com.ahci21.mvpAnR.service.impl;
 
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,59 +13,90 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.ahci21.mvpAnR.dto.AccessTokenDto;
+import com.ahci21.mvpAnR.dto.MapTokenDto;
 import com.ahci21.mvpAnR.dto.TokenDto;
 import com.ahci21.mvpAnR.dto.UserDto;
+import com.ahci21.mvpAnR.entity.Permission;
+import com.ahci21.mvpAnR.entity.Role;
 import com.ahci21.mvpAnR.entity.User;
 import com.ahci21.mvpAnR.repository.RoleRepository;
 import com.ahci21.mvpAnR.repository.UserRepository;
 import com.ahci21.mvpAnR.service.LoginService;
-import com.ahci21.mvpAnR.util.TokenUtil;
-import com.ahci21.mvpAnR.entity.Role;
+import com.ahci21.mvpAnR.util.LoginTokenUtil;
 
 @Service
 public class LoginServiceImpl implements LoginService{    
     
     @Autowired
-    TokenUtil jwtUtil;
+    private UserRepository userRepository;
     
     @Autowired
-    UserRepository userRepository;
+    private RoleRepository roleRepository;
     
     @Autowired
-    RoleRepository roleRepository;
+    private PasswordEncoder passwordEncoder;
     
     @Autowired
-    PasswordEncoder passwordEncoder;
+    private LoginTokenUtil jwtUtil;
     
     @Override
-    public ResponseEntity<String> login(UserDto user) {
+    public  ResponseEntity<AccessTokenDto> login(UserDto user) {
         
-        User found =   userRepository.findByUsername(user.getUsername()).get();
+        User found = new User();        
+        Optional<User> userSearch = userRepository.findByUsername(user.getUsername());
+        AccessTokenDto accessDto = new AccessTokenDto();
+        accessDto.setMessage("Wrong Credentials");
         
-        System.out.println(found.toString());
+        //Finding user name
+        if (!userSearch.isPresent()) {
+            //Finding email
+            userSearch = userRepository.findByEmail(user.getUsername());
+            if (!userSearch.isPresent()) {
+                //Not found then doesn't exist
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(accessDto);
+            }
+        }
         
-        String token = jwtUtil.generateToken(1, found.getIduser(), 50000);
+        //Saving search to actual user
+        found = userSearch.get();        
         
-        return new ResponseEntity<String>("Wrong Credentials: "+token, null, HttpStatus.UNAUTHORIZED);
+        //Getting Permissions from Role
+        Set<Permission> permSet = found.getRoles().iterator().next().getPermissions();
+         
+        
+        //Validate password
+        if (passwordEncoder.matches(user.getPassword(), found.getPassword())) {
+            String token = jwtUtil.generateToken(1, found.getIduser(), jwtUtil.preparePermissions(permSet),60000);      
+            accessDto.setMessage("Succesfull Login");
+            accessDto.setToken(token);
+            return ResponseEntity.ok(accessDto);
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(accessDto);
+        }     
+        
     }
 
     @Override
     public ResponseEntity<String> register(User user) {
-        Set<com.ahci21.mvpAnR.entity.Role> roles = new HashSet<>();
-        Role r = roleRepository.findAll().get(0);
         
-        System.out.println(r.toString());
-        
-        roles.add(r);
-        
-        user.setRoles(roles);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));      
-        
+        Set<Role> roles = new HashSet<>();
         try {
+            //Find basic Role
+            Role r = roleRepository.findById(1).get();
+            roles.add(r);
+        } catch (Exception e) {
+            return new ResponseEntity<String>("Base user role not found!", null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        
+        
+
+        try {       
+            //Set user basic Role
+            user.setRoles(roles);
+            user.setPassword(passwordEncoder.encode(user.getPassword()));        
             userRepository.save(user);
-            System.out.print(user.toString());            
-            return new ResponseEntity<String>("Answers successfully saved to database.", null, HttpStatus.CREATED);
-        } catch (Exception e) { 
+        } catch (Exception e) {
             if(e.getCause() != null && e.getCause().getCause() instanceof SQLIntegrityConstraintViolationException) {
                 SQLIntegrityConstraintViolationException sql_violation_exception = (SQLIntegrityConstraintViolationException) e.getCause().getCause() ;
                 return new ResponseEntity<String>("Constraint Violation: " + sql_violation_exception.getMessage(), null, HttpStatus.CONFLICT);
@@ -70,19 +104,63 @@ public class LoginServiceImpl implements LoginService{
                 return new ResponseEntity<String>("e.getMessage()", null, HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
+
         
+        return new ResponseEntity<String>("User successfully saved to database.", null, HttpStatus.CREATED);
+    }
+    
+    @Override 
+    public ResponseEntity<AccessTokenDto> refresh(HttpServletRequest request){
         
+        String authTokenHeader =  request.getHeader("Authorization");
+        MapTokenDto loginDto = new MapTokenDto();
+        AccessTokenDto accessDto = new AccessTokenDto();
+        
+        //Validate Token
+        
+        try {
+            loginDto =  jwtUtil.validateToken(authTokenHeader.split(" ")[1]);
+            accessDto.setMessage(loginDto.getMessage());
+        } catch (NullPointerException e) {      
+            accessDto.setMessage("No token was provided.");
+            return ResponseEntity.badRequest().body(accessDto);
+        }
+
+        //Check Token state
+        
+        if (loginDto.getMessage().equals("Expired Token")) {
+            String refreshToken = jwtUtil.generateRefreshToken(loginDto.getLoginToken().getId(), loginDto.getLoginToken().getIduser(), loginDto.getLoginToken().getIdpermission());
+            accessDto.setToken(refreshToken);
+            return ResponseEntity.created(null).body(accessDto);
+        }else{
+            return ResponseEntity.badRequest().body(accessDto);
+        }
+        
+
     }
 
     @Override
-    public ResponseEntity<String> refreshToken() {
-        return new ResponseEntity<String>("Wrong Credentials", null, HttpStatus.UNAUTHORIZED);
-    }
+    public ResponseEntity<AccessTokenDto> validateToken(HttpServletRequest request) {
 
-    @Override
-    public ResponseEntity<String> validateToken(TokenDto token) {
-        return new ResponseEntity<String>("Wrong Credentials"+jwtUtil.validateToken(token.getToken()), null, HttpStatus.UNAUTHORIZED);
+        AccessTokenDto accessDto = new AccessTokenDto();
+        MapTokenDto mapDto = new MapTokenDto();
+        
+        try {
+            mapDto = jwtUtil.validateToken(request.getHeader("Authorization").split(" ")[1]);
+            accessDto.setMessage(mapDto.getMessage());
+        } catch (NullPointerException e) {      
+            accessDto.setMessage("No token was provided.");
+            return ResponseEntity.badRequest().body(accessDto);
+        }
+        
+        if (accessDto.getMessage().equals("Valid Token, refresh is not necessary")) {
+            return ResponseEntity.ok(accessDto);
+        }else{
+            return ResponseEntity.badRequest().body(accessDto);
+        }
+        
+      
         
     }
-
+    
 }

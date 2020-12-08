@@ -7,6 +7,8 @@ import javax.persistence.Id;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import io.swagger.annotations.ApiModelProperty;
 
 @Entity
@@ -23,6 +25,7 @@ public class DocumentosPersonales {
     
     private String partida;
     
+    @JsonIgnore 
     @OneToOne(mappedBy = "documentos_personales")
     private Persona persona;
 

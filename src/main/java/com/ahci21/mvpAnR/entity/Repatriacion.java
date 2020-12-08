@@ -10,6 +10,8 @@ import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 import javax.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 public class Repatriacion {
     
@@ -27,6 +29,7 @@ public class Repatriacion {
     
     private String observaciones;
     
+    @JsonIgnore 
     @ManyToMany(mappedBy = "repatriacion")
     Set<Persona> personasReapatriadas;
 

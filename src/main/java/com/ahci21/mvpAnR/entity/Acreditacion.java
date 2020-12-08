@@ -10,6 +10,8 @@ import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 import javax.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 public class Acreditacion {
     @Id
@@ -22,6 +24,7 @@ public class Acreditacion {
     @NotNull
     private Date acreditacion_fecha;
     
+    @JsonIgnore 
     @ManyToMany(mappedBy = "acreditaciones")
     Set<Persona> acreditados;
     

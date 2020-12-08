@@ -10,6 +10,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sun.istack.NotNull;
 
 import io.swagger.annotations.ApiModel;
@@ -30,6 +31,7 @@ public class Role {
     @NotNull
     private int role_active;
     
+    @JsonIgnore 
     @ManyToMany(mappedBy = "roles")
     Set<User> usersAssigned;
     
@@ -88,6 +90,15 @@ public class Role {
                 +" - name: "+this.role_name   
                 +"}";
     }
+
+    public Set<Permission> getPermissions() {
+        return permissions;
+    }
+
+    public void setPermissions(Set<Permission> permissions) {
+        this.permissions = permissions;
+    }
+    
     
     
     

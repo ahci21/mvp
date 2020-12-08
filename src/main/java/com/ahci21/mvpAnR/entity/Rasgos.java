@@ -7,6 +7,8 @@ import javax.persistence.Id;
 import javax.persistence.OneToOne;
 import javax.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 public class Rasgos {
     
@@ -31,6 +33,7 @@ public class Rasgos {
     @NotNull
     private String señas_particulares;
     
+    @JsonIgnore 
     @OneToOne(mappedBy = "rasgos")
     private Persona persona;
 

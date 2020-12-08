@@ -9,6 +9,8 @@ import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 import javax.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import io.swagger.annotations.ApiModel;
 
 @Entity
@@ -24,8 +26,9 @@ public class Permission {
     private String permission_description;
     
     @NotNull
-    private int permisison_active;
+    private int permission_active;
     
+    @JsonIgnore 
     @ManyToMany(mappedBy = "permissions")
     Set<Role> permissionAssigned;
 
@@ -54,11 +57,11 @@ public class Permission {
     }
 
     public int getPermisison_active() {
-        return permisison_active;
+        return permission_active;
     }
 
     public void setPermisison_active(int permisison_active) {
-        this.permisison_active = permisison_active;
+        this.permission_active = permisison_active;
     }
 
     public Set<Role> getPermissionAssigned() {
@@ -74,8 +77,7 @@ public class Permission {
         return "{permissionID: "+this.idpermission
                 +" - name: "+this.permission_name
                 +" - description: "+this.permission_description
-                +" - active: "+this.permisison_active   
+                +" - active: "+this.permission_active   
                 +"}";
     }
-    
 }

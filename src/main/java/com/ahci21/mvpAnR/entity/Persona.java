@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -16,31 +17,43 @@ import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import io.swagger.annotations.ApiModel;
+
 @Entity
+@ApiModel
 public class Persona {
     
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     private int idpersona;
     
+    @Column(name = "nombre_uno")
     @NotNull
-    private String nombre_uno;
+    private String nombreUno;
     
-    private String nombre_otros;
+    @Column(name = "nombre_otros")
+    private String nombreOtros;
     
+    @Column(name = "apellido_paterno")
     @NotNull
-    private String apellido_paterno;
+    private String apellidoPaterno;
     
+    @Column(name = "apellido_materno")
     @NotNull
-    private String apellido_materno;
+    private String apellidoMaterno;
     
-    private Date fecha_nacimiento;
+    @Column(name = "fecha_nacimiento")
+    private Date fechaNacimiento;
     
     private String profesion;
     
     private String telefono;
     
-    private String estado_civil;
+    @Column(name = "estado_civil")
+    private String estadoCivil;
+    
     
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(
@@ -48,19 +61,22 @@ public class Persona {
             referencedColumnName = "iddocumentos_personales")
     private DocumentosPersonales documentos_personales;
     
+    
     @OneToOne(cascade =  CascadeType.ALL)
     @JoinColumn(
             name = "idrasgos",
             referencedColumnName = "idrasgos")
     private Rasgos rasgos;
     
+
     @ManyToMany
     @JoinTable(
-            name = "persona_repatriacion",
+            name = "persona_reapatriacion",
             joinColumns = @JoinColumn(name = "idpersona"),
             inverseJoinColumns = @JoinColumn(name = "idrepatriacion"))
     private Set<Repatriacion> repatriacion;
     
+
     @ManyToMany
     @JoinTable(
             name = "acreditados",
@@ -68,9 +84,11 @@ public class Persona {
             inverseJoinColumns = @JoinColumn(name = "idacreditacion"))
     private Set<Acreditacion> acreditaciones;
     
+    @JsonIgnore 
     @OneToMany(mappedBy = "persona_1")
     private List<Parentesco> parientes_1;
     
+    @JsonIgnore 
     @OneToMany(mappedBy = "persona_2")
     private List<Parentesco> parientes_2;
 
@@ -83,43 +101,43 @@ public class Persona {
     }
 
     public String getNombre_uno() {
-        return nombre_uno;
+        return nombreUno;
     }
 
     public void setNombre_uno(String nombre_uno) {
-        this.nombre_uno = nombre_uno;
+        this.nombreUno = nombre_uno;
     }
 
     public String getNombre_otros() {
-        return nombre_otros;
+        return nombreOtros;
     }
 
     public void setNombre_otros(String nombre_otros) {
-        this.nombre_otros = nombre_otros;
+        this.nombreOtros = nombre_otros;
     }
 
     public String getApellido_paterno() {
-        return apellido_paterno;
+        return apellidoPaterno;
     }
 
     public void setApellido_paterno(String apellido_paterno) {
-        this.apellido_paterno = apellido_paterno;
+        this.apellidoPaterno = apellido_paterno;
     }
 
     public String getApellido_materno() {
-        return apellido_materno;
+        return apellidoMaterno;
     }
 
     public void setApellido_materno(String apellido_materno) {
-        this.apellido_materno = apellido_materno;
+        this.apellidoMaterno = apellido_materno;
     }
 
     public Date getFecha_nacimiento() {
-        return fecha_nacimiento;
+        return fechaNacimiento;
     }
 
     public void setFecha_nacimiento(Date fecha_nacimiento) {
-        this.fecha_nacimiento = fecha_nacimiento;
+        this.fechaNacimiento = fecha_nacimiento;
     }
 
     public String getProfesion() {
@@ -139,11 +157,11 @@ public class Persona {
     }
 
     public String getEstado_civil() {
-        return estado_civil;
+        return estadoCivil;
     }
 
     public void setEstado_civil(String estado_civil) {
-        this.estado_civil = estado_civil;
+        this.estadoCivil = estado_civil;
     }
 
     public DocumentosPersonales getDocumentos_personales() {
@@ -198,8 +216,13 @@ public class Persona {
     public String toString() {
         return "{"
                 + "Nombre: "+this.getNombre_uno()+"\n"
+                + "Nombre 2: "+this.getNombre_otros()+"\n"
                 + "Apellido Paterno: "+this.getApellido_paterno()+"\n"
-                + "Profesión: "+this.profesion
+                + "Apellido Materno: "+this.getApellido_materno()+"\n"
+                + "Profesión: "+this.getProfesion()+"\n"
+                + "Documentos extra: "+this.getDocumentos_personales()+"\n"
+                + "Rasgos Particulares: "+this.getRasgos()
+                
                         + "}";
     }
     

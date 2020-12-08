@@ -11,6 +11,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sun.istack.NotNull;
 
 @Entity
@@ -23,12 +24,15 @@ public class Parentesco {
     @NotNull
     private String relacion;
     
+    @JsonIgnore 
     @ManyToMany(mappedBy = "parentescos")
     Set<VinculoFamiliar> vinculos;
+    
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "persona_1")
     private DocumentosPersonales persona_1;  
+    
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "persona_2")
